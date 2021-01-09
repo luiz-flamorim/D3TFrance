@@ -28,22 +28,61 @@ d3.csv('sales.csv', (d) => {
     .then((results) => {
         x.domain(results.map(d => d.flavors))
         y.domain([0, d3.max(results, d => d.sales)])
-            .nice()// rounds up the value for the axis
+            .nice() // rounds up the value for the axis
 
-        svg.append('g')// y axis
+        svg.append('g') // y axis
             .call(d3.axisLeft(y))
 
-        svg.append('g')// x axis
+        svg.append('g') // x axis
             .attr('transform', `translate(0, ${height})`)
             .call(d3.axisBottom(x))
             .selectAll('text')
-            .attr('x', x.bandwidth()/2)
+            .attr('x', x.bandwidth() / 2)
             .attr('y', 0)
             .attr('dy', '0.35em')
             .attr('transform', 'rotate(90)')
             .attr('text-anchor', 'start')
 
+        createBars(results)
+
     })
     .catch((error) => {
         throw error;
     })
+
+function createBars(results) {
+    let bar = svg.selectAll('.bar-group')
+        .data(results)
+        .enter()
+        .append('g')
+        .attr('class', 'bar-group')
+
+    bar.append('rect')
+        .attr('class', 'bar')
+        .attr('x', d => x(d.flavors))
+        .attr('y', d => y(0))
+        .attr('width', x.bandwidth())
+        .attr('height', 0)
+        .style('fill', 'steelblue')
+        .transition()
+        .duration(1750)
+        .attr('y', d => y(d.sales))
+        .attr('height', d => height - y(d.sales))
+
+
+
+    bar.append('text')
+        .text(d => d.sales)
+        .attr('x', d => x(d.flavors) + (x.bandwidth() / 2))
+        .attr('y', d => y(d.sales) - 5)
+        .attr('text-anchor', 'middle')
+        .style('font-family', 'sans-serif')
+        .style('font-size', 10)
+        .style('opacity', 0)
+        .transition()
+        .delay(1500)
+        .duration(200)
+        .style('opacity', 1)
+
+
+}
