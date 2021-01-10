@@ -26,8 +26,11 @@ d3.csv('sales.csv', (d) => {
         return d
     })
     .then((results) => {
+
+        let maxValue = d3.max(results, d => d.sales)
+
         x.domain(results.map(d => d.flavors))
-        y.domain([0, d3.max(results, d => d.sales)])
+        y.domain([0, maxValue])
             .nice() // rounds up the value for the axis
 
         svg.append('g') // y axis
@@ -45,44 +48,65 @@ d3.csv('sales.csv', (d) => {
 
         createBars(results)
 
+        let rangeSlider = document.getElementById('sales-range')
+
+        rangeSlider.min = 0;
+        rangeSlider.max = maxValue;
+
+        rangeSlider.onchange = () => {
+            let filteredData = results.filter(d => d.sales >= rangeSlider.value)
+            createBars(filteredData)
+        }
+
     })
     .catch((error) => {
         throw error;
     })
 
 function createBars(results) {
-    let bar = svg.selectAll('.bar-group')
-        .data(results)
-        .enter()
-        .append('g')
-        .attr('class', 'bar-group')
 
-    bar.append('rect')
-        .attr('class', 'bar')
-        .attr('x', d => x(d.flavors))
-        .attr('y', d => y(0))
-        .attr('width', x.bandwidth())
-        .attr('height', 0)
-        .style('fill', 'steelblue')
-        .transition()
-        .duration(1750)
-        .attr('y', d => y(d.sales))
-        .attr('height', d => height - y(d.sales))
+    svg.selectAll('.bar-group')
+        .data(results, d => d.flavors)
+        .join(
+            enter => {
+                let bar = enter.append('g')
+                    .attr('class', 'bar-group')
+                    .style('opacity', 1)
 
+                bar.append('rect')
+                    .attr('class', 'bar')
+                    .attr('x', d => x(d.flavors))
+                    .attr('y', d => y(0))
+                    .attr('width', x.bandwidth())
+                    .attr('height', 0)
+                    .style('fill', 'steelblue')
+                    .transition()
+                    .duration(1750)
+                    .attr('y', d => y(d.sales))
+                    .attr('height', d => height - y(d.sales))
 
+                bar.append('text')
+                    .text(d => d.sales)
+                    .attr('x', d => x(d.flavors) + (x.bandwidth() / 2))
+                    .attr('y', d => y(d.sales) - 5)
+                    .attr('text-anchor', 'middle')
+                    .style('font-family', 'sans-serif')
+                    .style('font-size', 10)
+                    .style('opacity', 0)
+                    .transition()
+                    .delay(1500)
+                    .duration(200)
+                    .style('opacity', 1)
 
-    bar.append('text')
-        .text(d => d.sales)
-        .attr('x', d => x(d.flavors) + (x.bandwidth() / 2))
-        .attr('y', d => y(d.sales) - 5)
-        .attr('text-anchor', 'middle')
-        .style('font-family', 'sans-serif')
-        .style('font-size', 10)
-        .style('opacity', 0)
-        .transition()
-        .delay(1500)
-        .duration(200)
-        .style('opacity', 1)
-
-
+            },
+            update => {
+                update.transition(750)
+                    .style('opacity', 1)
+            },
+            exit => {
+                exit.transition()
+                    .duration(750)
+                    .style('opacity', 0.15)
+            }
+        )
 }
